@@ -39,7 +39,7 @@ terminal PLUS, MOINS, MOINS_UNAIRE, MUL, DIV, MOD, NOT, OR, AND, PAR_G, PAR_D, S
 terminal Integer ENTIER;
 terminal String IDENT;
 /* non terminaux */
-non terminal program, sequence, expression, expr;
+non terminal CompilArbre program, sequence, expression, expr;
 
 precedence nonassoc OUTPUT;
 precedence right OR;
@@ -54,40 +54,40 @@ precedence left MOINS_UNAIRE;
 /* grammaire */
 // un pg est une sequence d'insctions terminee par point
 program ::= 
-    sequence:s POINT  
+    sequence:s {: System.out.println(s); :} POINT
     ;
 
 // une sequence est une suite d'instructions separes par des point virgules 
-sequence ::= expression:e1 SEMI sequence:e2
-            | expression:e   
+sequence ::= expression:e1  SEMI sequence:e2 {: RESULT = new CompilArbre(";"); RESULT.addChild(e1); RESULT.addChild(e2); :}
+            | expression:e  {: RESULT = e; :}
             |
             ;
 
 // une expession est soit une affectation ,une              
-expression ::= expr:e 
-             | LET IDENT:nom EGAL expr:e                  
-             | WHILE expr:cond DO expression:e 
-             | IF expr:cond THEN expression:a1 ELSE expression:a2 
+expression ::= expr:e {: RESULT = new CompilArbre("EXPR"); RESULT.addChild(e); :}
+             | LET IDENT:nom EGAL expr:e {: RESULT = new CompilArbre("LET"); RESULT.addChild(nom); RESULT.addChild(e);:}
+             | WHILE expr:cond DO expression:e {: RESULT = new CompilArbre("WHILE"); RESULT.addChild(cond); RESULT.addChild(e); :}
+             | IF expr:cond THEN expression:a1 ELSE expression:a2 {: RESULT = new CompilArbre("IF"); RESULT.addChild(cond); RESULT.addChild(a1); RESULT.addChild(a2); :}
              | error // reprise d'erreurs
              ;
 
 // expression arithmetiques et logiques 
-expr ::= NOT:op expr:e
-       | expr:e1 AND expr:e2
-       | expr:e1 OR expr:e2
-       | expr:e1 EGAL expr:e2
-       | expr:e1 GT expr:e2
-       | expr:e1 GTE expr:e2
-       | expr:e1 PLUS expr:e2
-       | expr:e1 MOINS expr:e2
-       | expr:e1 MUL expr:e2
-       | expr:e1 DIV expr:e2
-       | expr:e1 MOD expr:e2
-       | MOINS expr:e             %prec MOINS_UNAIRE 
-       | OUTPUT expr:e
-       | INPUT
-       | NIL
-       | ENTIER:n
-       | IDENT:id
-       | PAR_G sequence:e PAR_D
+expr ::= NOT:op expr:e {: RESULT = new CompilArbre("NOT"); RESULT.addChild(e); :}
+       | expr:e1 AND expr:e2 {: RESULT = new CompilArbre("AND"); RESULT.addChild(e1); RESULT.addChild(e2); :}
+       | expr:e1 OR expr:e2 {: RESULT = new CompilArbre("OR"); RESULT.addChild(e1); RESULT.addChild(e2); :}
+       | expr:e1 EGAL expr:e2 {: RESULT = new CompilArbre("EGAL"); RESULT.addChild(e1); RESULT.addChild(e2); :}
+       | expr:e1 GT expr:e2 {: RESULT = new CompilArbre("GT"); RESULT.addChild(e1); RESULT.addChild(e2); :}
+       | expr:e1 GTE expr:e2 {: RESULT = new CompilArbre("GTE"); RESULT.addChild(e1); RESULT.addChild(e2); :}
+       | expr:e1 PLUS expr:e2 {: RESULT = new CompilArbre("PLUS"); RESULT.addChild(e1); RESULT.addChild(e2); :}
+       | expr:e1 MOINS expr:e2 {: RESULT = new CompilArbre("MOINS"); RESULT.addChild(e1); RESULT.addChild(e2); :}
+       | expr:e1 MUL expr:e2 {: RESULT = new CompilArbre("MUL"); RESULT.addChild(e1); RESULT.addChild(e2); :}
+       | expr:e1 DIV expr:e2 {: RESULT = new CompilArbre("DIV"); RESULT.addChild(e1); RESULT.addChild(e2); :}
+       | expr:e1 MOD expr:e2 {: RESULT = new CompilArbre("MOD"); RESULT.addChild(e1); RESULT.addChild(e2); :}
+       | MOINS expr:e {: RESULT = new CompilArbre("MINUS"); RESULT.addChild(e); :}             %prec MOINS_UNAIRE
+       | OUTPUT expr:e {: RESULT = new CompilArbre("OUTPUT"); RESULT.addChild(e); :}
+       | INPUT {: RESULT = new CompilArbre("INPUT"); :}
+       | NIL {: RESULT = new CompilArbre("NIL"); :}
+       | ENTIER:n {: RESULT = new CompilArbre("NUMBER"); RESULT.addChild(n); :}
+       | IDENT:id {: RESULT = new CompilArbre("IDENT"); RESULT.addChild(id); :}
+       | PAR_G sequence:e PAR_D {: RESULT = new CompilArbre("PAREN"); RESULT.addChild(e); :}
        ;

@@ -23,8 +23,8 @@ import java_cup.runtime.Symbol;
 
 chiffre     = [0-9]
 espace      = \s
-mod         = "%" | "mod"|"MOD"
-let         = "let"|"LET"
+mod         = "%" | "mod" | "MOD"
+let         = "let" | "LET"
 while       = "while" | "WHILE"
 do          = "do" | "DO"
 if          = "if" | "IF"
