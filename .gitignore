@@ -34,3 +34,7 @@
 # IntelliJ SonarLint plugin
 .idea/sonarlint/
 
+/.idea/.gitignore
+/.idea/misc.xml
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/vcs.xml

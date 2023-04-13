@@ -2,28 +2,21 @@ package fr.usmb.m1isc.compilation.tp;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class CompilArbre {
-    private ArrayList<Object> children;
-    private String action;
+    private final ArrayList<Object> children;
+    private final String action;
 
     public CompilArbre(String action) {
         this.action = action;
         this.children = new ArrayList<>();
     }
 
-    public void addChild(Object child) {
-        this.children.add(child);
-    }
-
-    public ArrayList<Object> getChildren() {
-        return children;
-    }
-
     private Set<String> getHeaderRecc() {
         Set<String> vars = new HashSet<>();
-        if (this.action == "IDENT" || this.action == "LET") {
+        if (Objects.equals(this.action, "IDENT") || Objects.equals(this.action, "LET")) {
             vars.add(this.children.get(0).toString());
         }
         for (Object child : children) {
@@ -50,71 +43,67 @@ public class CompilArbre {
         int idx;
         switch (action) {
             case ";":
-                if (!(this.children.get(1) instanceof CompilArbre)) return ((CompilArbre) this.children.get(0)).getCodeRecc();
+                if (!(this.children.get(1) instanceof CompilArbre)) return getCodeLeftBranch();
                 return String.format("%s%s",
-                        ((CompilArbre) this.children.get(0)).getCodeRecc(),
-                        ((CompilArbre) this.children.get(1)).getCodeRecc());
+                        getCodeLeftBranch(),
+                        getCodeRightBranch());
             case "LET":
                 return String.format("%s\tmov %s, eax\n",
-                        ((CompilArbre) this.children.get(1)).getCodeRecc(),
+                        getCodeRightBranch(),
                         this.children.get(0).toString());
             case "NUMBER":
-                return String.format("\tmov eax, %s\n",
-                        this.children.get(0).toString());
             case "IDENT":
                 return String.format("\tmov eax, %s\n",
                         this.children.get(0).toString());
             case "PLUS":
                 return String.format("%s\tpush eax\n%s\tpop ebx\n\tadd eax, ebx\n",
-                        ((CompilArbre) this.children.get(0)).getCodeRecc(),
-                        ((CompilArbre) this.children.get(1)).getCodeRecc());
+                        getCodeLeftBranch(),
+                        getCodeRightBranch());
             case "MOINS":
                 return String.format("%s\tpush eax\n%s\tpop ebx\n\tsub eax, ebx\n",
-                        ((CompilArbre) this.children.get(0)).getCodeRecc(),
-                        ((CompilArbre) this.children.get(1)).getCodeRecc());
+                        getCodeLeftBranch(),
+                        getCodeRightBranch());
             case "MINUS":
                 return String.format("%s\tmul eax, -1\n",
-                        ((CompilArbre) this.children.get(0)).getCodeRecc());
+                        getCodeLeftBranch());
             case "MUL":
                 return String.format("%s\tpush eax\n%s\tpop ebx\n\tmul eax, ebx\n",
-                        ((CompilArbre) this.children.get(0)).getCodeRecc(),
-                        ((CompilArbre) this.children.get(1)).getCodeRecc());
+                        getCodeLeftBranch(),
+                        getCodeRightBranch());
             case "DIV":
                 return String.format("%s\tpush eax\n%s\tpop ebx\n\tdiv ebx\n\tmov eax, ebx\n",
-                        ((CompilArbre) this.children.get(0)).getCodeRecc(),
-                        ((CompilArbre) this.children.get(1)).getCodeRecc());
+                        getCodeLeftBranch(),
+                        getCodeRightBranch());
             case "MOD":
                 return String.format("%s\tpush eax\n%s\tpop ebx\n\txor edx,edx\n\tdiv ebx\n\tmov eax, edx\n",
-                        ((CompilArbre) this.children.get(0)).getCodeRecc(),
-                        ((CompilArbre) this.children.get(1)).getCodeRecc());
+                        getCodeLeftBranch(),
+                        getCodeRightBranch());
             case "EXPR":
-                return String.format("%s",
-                        ((CompilArbre) this.children.get(0)).getCodeRecc());
             case "PAREN":
                 return String.format("%s",
-                        ((CompilArbre) this.children.get(0)).getCodeRecc());
+                        getCodeLeftBranch());
             case "INPUT":
-                return String.format("\tin eax\n");
+                return "\tin eax\n";
             case "OUTPUT":
                 return String.format("%s\tout eax\n",
-                        ((CompilArbre) this.children.get(0)).getCodeRecc());
+                        getCodeLeftBranch());
             case "WHILE":
                 idx = whileIdx++;
                 return String.format(
                         "debut_while_%1$d:\n%2$s\tjz sortie_while_%1$d\n%3$s\tjmp debut_while_%1$d\nsortie_while_%1$d:\n",
-                        idx, ((CompilArbre) this.children.get(0)).getCodeRecc(),
-                        ((CompilArbre) this.children.get(1)).getCodeRecc());
+                        idx, getCodeLeftBranch(),
+                        getCodeRightBranch());
             case "GT":
                 idx = ifIdx++;
                 return String.format(
                         "%2$s\tpush eax\n%3$s\tpop ebx\n\tsub eax, ebx\n\tjle faux_gt_%1$d\n\tmov eax, 1\n\tjmp sortie_gt_%1$d\nfaux_gt_%1$d:\n\tmov eax, 0\nsortie_gt_%1$d:\n",
-                        idx, ((CompilArbre) this.children.get(0)).getCodeRecc(),
-                        ((CompilArbre) this.children.get(1)).getCodeRecc());
+                        idx, getCodeLeftBranch(),
+                        getCodeRightBranch());
             case "IF":
                 idx = ifIdx++;
                 return String.format("%2$s\tjnz si_else_%1$d\n%3$s\tjmp si_fin_%1$d\nsi_else_%1$d:\n%4$ssi_fin_%1$d:\n",
-                        idx, ((CompilArbre) this.children.get(0)).getCodeRecc(),
-                        ((CompilArbre) this.children.get(1)).getCodeRecc(),
+                        idx, getCodeLeftBranch(),
+                        getCodeRightBranch(),
                         ((CompilArbre) this.children.get(2)).getCodeRecc());
             case "NOT":
                 return String.format("");
@@ -133,6 +122,18 @@ public class CompilArbre {
         }
     }
 
+    private String getCodeRightBranch() {
+        return getCodeFromBranch(1);
+    }
+
+    private String getCodeFromBranch(int branchId) {
+        return ((CompilArbre) this.children.get(branchId)).getCodeRecc();
+    }
+
+    private String getCodeLeftBranch() {
+        return getCodeFromBranch(0);
+    }
+
     private String getCode() {
         return String.format("CODE SEGMENT\n%sCODE ENDS\n", this.getCodeRecc());
     }
@@ -149,30 +150,30 @@ public class CompilArbre {
         // else str += " ()";
         // }
         // return str + ")";
-        if (this.action == "EXPR" || this.action == "NUMBER" || this.action == "IDENT" || this.action == "PAREN") {
+        if (Objects.equals(this.action, "EXPR") || Objects.equals(this.action, "NUMBER") || Objects.equals(this.action, "IDENT") || Objects.equals(this.action, "PAREN")) {
             return this.children.get(0).toString();
         }
-        String str = "(" + CompilArbre.actionToPrintable(this.action);
+        StringBuilder str = new StringBuilder("(" + CompilArbre.actionToPrintable(this.action));
         for (Object child : children) {
             if (child != null)
-                str += " " + child.toString();
+                str.append(" ").append(child);
             else
-                str += " ()";
+                str.append(" ()");
         }
         return str + ")";
     }
 
     public String toStringLarge() {
-        String str = "(" + this.action;
+        StringBuilder str = new StringBuilder("(" + this.action);
         for (Object child : children) {
             if (child != null) {
                 if (child instanceof CompilArbre) {
-                    str += " " + ((CompilArbre) child).toStringLarge();
+                    str.append(" ").append(((CompilArbre) child).toStringLarge());
                 } else
-                    str += " " + child.toString();
+                    str.append(" ").append(child);
             }
             else
-                str += " ()";
+                str.append(" ()");
         }
         return str + ")";
     }
@@ -182,6 +183,7 @@ public class CompilArbre {
             case "PLUS":
                 return "+";
             case "MOINS":
+            case "MINUS":
                 return "-";
             case "MUL":
                 return "*";
@@ -189,8 +191,6 @@ public class CompilArbre {
                 return "/";
             case "MOD":
                 return "%";
-            case "MINUS":
-                return "-";
             case "IF":
                 return "IF";
             case "WHILE":
