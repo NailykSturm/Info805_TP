@@ -42,6 +42,10 @@ public class CompilArbre {
     private String getCodeRecc() {
         int idx;
         switch (action) {
+
+            //////////////////////
+            // BASIC OPERATORS
+            //////////////////////
             case ";":
                 if (!(this.children.get(1) instanceof CompilArbre)) return getCodeLeftBranch();
                 return String.format("%s%s",
@@ -55,6 +59,24 @@ public class CompilArbre {
             case "IDENT":
                 return String.format("\tmov eax, %s\n",
                         this.children.get(0).toString());
+            case "NIL":
+                // représentation courante du null / nil en asm
+                return "\tmov eax, 0\n";
+
+            //////////////////////
+            // UNARY OPERATIONS
+            //////////////////////
+            case "EXPR":
+            case "PAREN":
+                return String.format("%s",
+                        getCodeLeftBranch());
+            case "MINUS":
+                return String.format("%s\tmul eax, -1\n",
+                        getCodeLeftBranch());
+
+            //////////////////////
+            // DUAL OPERATIONS
+            //////////////////////
             case "PLUS":
                 return String.format("%s\tpush eax\n%s\tpop ebx\n\tadd eax, ebx\n",
                         getCodeLeftBranch(),
@@ -63,9 +85,6 @@ public class CompilArbre {
                 return String.format("%s\tpush eax\n%s\tpop ebx\n\tsub eax, ebx\n",
                         getCodeLeftBranch(),
                         getCodeRightBranch());
-            case "MINUS":
-                return String.format("%s\tmul eax, -1\n",
-                        getCodeLeftBranch());
             case "MUL":
                 return String.format("%s\tpush eax\n%s\tpop ebx\n\tmul eax, ebx\n",
                         getCodeLeftBranch(),
@@ -78,25 +97,23 @@ public class CompilArbre {
                 return String.format("%s\tpush eax\n%s\tpop ebx\n\txor edx,edx\n\tdiv ebx\n\tmov eax, edx\n",
                         getCodeLeftBranch(),
                         getCodeRightBranch());
-            case "EXPR":
-            case "PAREN":
-                return String.format("%s",
-                        getCodeLeftBranch());
+
+            //////////////////////
+            // IO FUNCTIONS
+            //////////////////////
             case "INPUT":
                 return "\tin eax\n";
             case "OUTPUT":
                 return String.format("%s\tout eax\n",
                         getCodeLeftBranch());
+
+            //////////////////////
+            // CONDITIONNAL BLOCS
+            //////////////////////
             case "WHILE":
                 idx = whileIdx++;
                 return String.format(
                         "debut_while_%1$d:\n%2$s\tjz sortie_while_%1$d\n%3$s\tjmp debut_while_%1$d\nsortie_while_%1$d:\n",
-                        idx, getCodeLeftBranch(),
-                        getCodeRightBranch());
-            case "GT":
-                idx = ifIdx++;
-                return String.format(
-                        "%2$s\tpush eax\n%3$s\tpop ebx\n\tsub eax, ebx\n\tjle faux_gt_%1$d\n\tmov eax, 1\n\tjmp sortie_gt_%1$d\nfaux_gt_%1$d:\n\tmov eax, 0\nsortie_gt_%1$d:\n",
                         idx, getCodeLeftBranch(),
                         getCodeRightBranch());
             case "IF":
@@ -105,18 +122,45 @@ public class CompilArbre {
                         idx, getCodeLeftBranch(),
                         getCodeRightBranch(),
                         ((CompilArbre) this.children.get(2)).getCodeRecc());
+
+            //////////////////////
+            // BOOLEAN OPERATIONS
+            //////////////////////
+            case "GT":
+                idx = ifIdx++;
+                return String.format(
+                        "%2$s\tpush eax\n%3$s\tpop ebx\n\tsub eax, ebx\n\tjle faux_gt_%1$d\n\tmov eax, 1\n\tjmp sortie_gt_%1$d\nfaux_gt_%1$d:\n\tmov eax, 0\nsortie_gt_%1$d:\n",
+                        idx, getCodeLeftBranch(),
+                        getCodeRightBranch());
             case "NOT":
-                return String.format("");
+                // Logique du not en asm : inversion bit à bit. Si on recoit en entrée un 0/1, ca nous sort -1/-2. En rajoutant 2, on se retrouve avec 1/0, ce qui inverse bien le booléen.
+                return String.format("%1$s\tnot eax\n\tadd eax, 2\n", getCodeLeftBranch());
             case "OR":
-                return String.format("");
+                idx = ifIdx++;
+                return String.format("%2$s\tpush eax\n%3$s\tpop ebx\n\tor eax, ebx\n\tjz faux_or_%1$d\n\tmov eax, 1\n\tjmp sortie_or_%1$d\nfaux_or_%1$d:\n\tmov eax, 0\nsortie_or_%1$d:\n",
+                        idx, getCodeLeftBranch(),
+                        getCodeRightBranch());
             case "AND":
-                return String.format("");
+                idx = ifIdx++;
+                return String.format("%2$s\tpush eax\n%3$s\tpop ebx\n\tand eax, ebx\n\tjz faux_and_%1$d\n\tmov eax, 1\n\tjmp sortie_and_%1$d\nfaux_and_%1$d:\n\tmov eax, 0\nsortie_and_%1$d:\n",
+                        idx, getCodeLeftBranch(),
+                        getCodeRightBranch());
             case "EGAL":
-                return String.format("");
+                idx = ifIdx++;
+                return String.format(
+                        "%2$s\tpush eax\n%3$s\tpop ebx\n\tsub eax, ebx\n\tjnz faux_eq_%1$d\n\tmov eax, 1\n\tjmp sortie_eq_%1$d\nfaux_eq_%1$d:\n\tmov eax, 0\nsortie_eq_%1$d:\n",
+                        idx, getCodeLeftBranch(),
+                        getCodeRightBranch());
             case "GTE":
-                return String.format("");
-            case "NIL":
-                return String.format("");
+                idx = ifIdx++;
+                return String.format(
+                        "%2$s\tpush eax\n%3$s\tpop ebx\n\tsub eax, ebx\n\tjl faux_gte_%1$d\n\tmov eax, 1\n\tjmp sortie_gte_%1$d\nfaux_gte_%1$d:\n\tmov eax, 0\nsortie_gte_%1$d:\n",
+                        idx, getCodeLeftBranch(),
+                        getCodeRightBranch());
+
+            //////////////////////////////////////////////////////////////////////////////
+            // ERROR CASE : HAPPEN IF SOMETHING IS DETECTED AS A WORD WHILE NOT BEING ONE
+            //////////////////////////////////////////////////////////////////////////////
             default:
                 return String.format("; undefined action: %s", this.action);
         }
