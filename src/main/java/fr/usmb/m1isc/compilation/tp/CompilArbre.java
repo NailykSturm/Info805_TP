@@ -1,5 +1,7 @@
 package fr.usmb.m1isc.compilation.tp;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Objects;
@@ -12,6 +14,18 @@ public class CompilArbre {
     public CompilArbre(String action) {
         this.action = action;
         this.children = new ArrayList<>();
+    }
+
+    public void addChild(CompilArbre c) {
+        this.children.add(c);
+    }
+
+    public void addChild(String s) {
+        this.children.add(s);
+    }
+
+    public void addChild(Integer i) {
+        this.children.add(i);
     }
 
     private Set<String> getHeaderRecc() {
@@ -36,11 +50,9 @@ public class CompilArbre {
         return String.format("%sDATA ENDS\n", header);
     }
 
-    private static int whileIdx = 1;
-    private static int ifIdx = 1;
+    private static int idx = 1;
 
     private String getCodeRecc() {
-        int idx;
         switch (action) {
 
             //////////////////////
@@ -82,7 +94,7 @@ public class CompilArbre {
                         getCodeLeftBranch(),
                         getCodeRightBranch());
             case "MOINS":
-                return String.format("%s\tpush eax\n%s\tpop ebx\n\tsub eax, ebx\n",
+                return String.format("%s\tpush eax\n%s\tpop ebx\n\tsub ebx, eax\n\tmov eax, ebx\n",
                         getCodeLeftBranch(),
                         getCodeRightBranch());
             case "MUL":
@@ -90,11 +102,11 @@ public class CompilArbre {
                         getCodeLeftBranch(),
                         getCodeRightBranch());
             case "DIV":
-                return String.format("%s\tpush eax\n%s\tpop ebx\n\tdiv ebx\n\tmov eax, ebx\n",
+                return String.format("%s\tpush eax\n%s\tpop ebx\n\tdiv ebx, eax\n\tmov eax, ebx\n",
                         getCodeLeftBranch(),
                         getCodeRightBranch());
             case "MOD":
-                return String.format("%s\tpush eax\n%s\tpop ebx\n\txor edx,edx\n\tdiv ebx\n\tmov eax, edx\n",
+                return String.format("%s\tpush eax\n%s\tpop ebx\n\tmov ecx,ebx\n\tdiv ecx,eax\n\tmul ecx,eax\n\tsub ebx,ecx\n\tmov eax,ebx\n",
                         getCodeLeftBranch(),
                         getCodeRightBranch());
 
@@ -111,13 +123,13 @@ public class CompilArbre {
             // CONDITIONNAL BLOCS
             //////////////////////
             case "WHILE":
-                idx = whileIdx++;
+                idx++;
                 return String.format(
                         "debut_while_%1$d:\n%2$s\tjz sortie_while_%1$d\n%3$s\tjmp debut_while_%1$d\nsortie_while_%1$d:\n",
                         idx, getCodeLeftBranch(),
                         getCodeRightBranch());
             case "IF":
-                idx = ifIdx++;
+                idx++;
                 return String.format("%2$s\tjnz si_else_%1$d\n%3$s\tjmp si_fin_%1$d\nsi_else_%1$d:\n%4$ssi_fin_%1$d:\n",
                         idx, getCodeLeftBranch(),
                         getCodeRightBranch(),
@@ -127,7 +139,7 @@ public class CompilArbre {
             // BOOLEAN OPERATIONS
             //////////////////////
             case "GT":
-                idx = ifIdx++;
+                idx++;
                 return String.format(
                         "%2$s\tpush eax\n%3$s\tpop ebx\n\tsub eax, ebx\n\tjle faux_gt_%1$d\n\tmov eax, 1\n\tjmp sortie_gt_%1$d\nfaux_gt_%1$d:\n\tmov eax, 0\nsortie_gt_%1$d:\n",
                         idx, getCodeLeftBranch(),
@@ -136,23 +148,23 @@ public class CompilArbre {
                 // Logique du not en asm : inversion bit à bit. Si on recoit en entrée un 0/1, ca nous sort -1/-2. En rajoutant 2, on se retrouve avec 1/0, ce qui inverse bien le booléen.
                 return String.format("%1$s\tnot eax\n\tadd eax, 2\n", getCodeLeftBranch());
             case "OR":
-                idx = ifIdx++;
+                idx++;
                 return String.format("%2$s\tpush eax\n%3$s\tpop ebx\n\tor eax, ebx\n\tjz faux_or_%1$d\n\tmov eax, 1\n\tjmp sortie_or_%1$d\nfaux_or_%1$d:\n\tmov eax, 0\nsortie_or_%1$d:\n",
                         idx, getCodeLeftBranch(),
                         getCodeRightBranch());
             case "AND":
-                idx = ifIdx++;
+                idx++;
                 return String.format("%2$s\tpush eax\n%3$s\tpop ebx\n\tand eax, ebx\n\tjz faux_and_%1$d\n\tmov eax, 1\n\tjmp sortie_and_%1$d\nfaux_and_%1$d:\n\tmov eax, 0\nsortie_and_%1$d:\n",
                         idx, getCodeLeftBranch(),
                         getCodeRightBranch());
             case "EGAL":
-                idx = ifIdx++;
+                idx++;
                 return String.format(
                         "%2$s\tpush eax\n%3$s\tpop ebx\n\tsub eax, ebx\n\tjnz faux_eq_%1$d\n\tmov eax, 1\n\tjmp sortie_eq_%1$d\nfaux_eq_%1$d:\n\tmov eax, 0\nsortie_eq_%1$d:\n",
                         idx, getCodeLeftBranch(),
                         getCodeRightBranch());
             case "GTE":
-                idx = ifIdx++;
+                idx++;
                 return String.format(
                         "%2$s\tpush eax\n%3$s\tpop ebx\n\tsub eax, ebx\n\tjl faux_gte_%1$d\n\tmov eax, 1\n\tjmp sortie_gte_%1$d\nfaux_gte_%1$d:\n\tmov eax, 0\nsortie_gte_%1$d:\n",
                         idx, getCodeLeftBranch(),
@@ -183,7 +195,13 @@ public class CompilArbre {
     }
 
     public String treeToCode() {
-        return getHeader() + getCode();
+        String s = getHeader() + getCode();
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter("output.asm"));
+            writer.write(s);
+            writer.close();
+        } catch (Exception ignored) {}
+        return s;
     }
 
     @Override

@@ -2,24 +2,22 @@
 package fr.usmb.m1isc.compilation.tp;
 import java_cup.runtime.Symbol;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 
 /* inclusion du code */
 
-action code {: 
-    // pour utilisation dans les actions (classe action)
-    // HashMap pour la gestion des variables
-    private HashMap<String,Integer> vars = new HashMap<>();
-    // gestion des erreurs d'evaluation
-    private boolean erreur = false;
+action code {:
 :};
-
  
 parser code {:
     // pour le parser (redefinition de la methode reportant les erreurs d'analyse)
     public void report_error(String message, Object info) {
         String m = "";
         if (info instanceof java_cup.runtime.Symbol) {
-            Symbol s = ((Symbol) info);     
+            Symbol s = ((Symbol) info);
             if (s != null && s.left >= 0 ) {
                 /* Ajoute le numero de ligne  et de colonne*/
                 m =  "Ligne " + (s.left+1) + ", Colonne " + (s.right+1) + " : ";
@@ -54,7 +52,7 @@ precedence left MOINS_UNAIRE;
 /* grammaire */
 // un pg est une sequence d'insctions terminee par point
 program ::= 
-    sequence:s {: System.out.println(s.toStringLarge()); System.out.println(s); System.out.println(s.treeToCode()); :} POINT
+    sequence:s {: System.out.println(s.toStringLarge()); System.out.println(s); System.out.println(s.treeToCode());  :} POINT
     ;
 
 // une sequence est une suite d'instructions separes par des point virgules 
