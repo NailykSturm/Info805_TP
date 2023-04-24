@@ -60,9 +60,7 @@ public class CompilArbre {
             //////////////////////
             case ";":
                 if (!(this.children.get(1) instanceof CompilArbre)) return getCodeLeftBranch();
-                return String.format("%s%s",
-                        getCodeLeftBranch(),
-                        getCodeRightBranch());
+                return getCodeLeftBranch() + getCodeRightBranch();
             case "LET":
                 return String.format("%s\tmov %s, eax\n",
                         getCodeRightBranch(),
@@ -80,8 +78,7 @@ public class CompilArbre {
             //////////////////////
             case "EXPR":
             case "PAREN":
-                return String.format("%s",
-                        getCodeLeftBranch());
+                return getCodeLeftBranch();
             case "MINUS":
                 return String.format("%s\tmul eax, -1\n",
                         getCodeLeftBranch());
@@ -116,8 +113,7 @@ public class CompilArbre {
             case "INPUT":
                 return "\tin eax\n";
             case "OUTPUT":
-                return String.format("%s\tout eax\n",
-                        getCodeLeftBranch());
+                return getCodeLeftBranch() + "\tout eax\n";
 
             //////////////////////
             // CONDITIONNAL BLOCS
@@ -174,7 +170,7 @@ public class CompilArbre {
             // ERROR CASE : HAPPEN IF SOMETHING IS DETECTED AS A WORD WHILE NOT BEING ONE
             //////////////////////////////////////////////////////////////////////////////
             default:
-                return String.format("; undefined action: %s", this.action);
+                return "; undefined action: " + this.action;
         }
     }
 
