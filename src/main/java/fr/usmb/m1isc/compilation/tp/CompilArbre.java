@@ -50,7 +50,7 @@ public class CompilArbre {
         return String.format("%sDATA ENDS\n", header);
     }
 
-    private static int idx = 1;
+    private static int idx = 0;
 
     private String getCodeRecc() {
         switch (action) {
